@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:collection/collection.dart';
 
 typedef Interceptor<T> = T? Function(T? State);
 
@@ -576,7 +577,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
         }
         if (active && kIsWeb && setBrowserTabTitle) {
           SystemChrome.setApplicationSwitcherDescription(ApplicationSwitcherDescription(
-            label: _currentPages.last.title ?? _currentBeamLocation.state.uri.toString(),
+            label: _currentPages.lastOrNull?.title ?? _currentBeamLocation.state.uri.toString(),
             primaryColor: Theme.of(context).primaryColor.value,
           ));
         }
