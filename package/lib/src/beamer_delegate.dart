@@ -577,7 +577,9 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
         }
         if (active && kIsWeb && setBrowserTabTitle) {
           SystemChrome.setApplicationSwitcherDescription(ApplicationSwitcherDescription(
-            label: _currentPages.lastOrNull?.title ?? _currentBeamLocation.state.uri.toString(),
+            label: (_currentBeamLocation is NotFound || _currentBeamLocation is EmptyBeamLocation)
+                ? 'Not Found'
+                : _currentPages.lastOrNull?.title ?? _currentBeamLocation.state.uri.toString(),
             primaryColor: Theme.of(context).primaryColor.value,
           ));
         }
