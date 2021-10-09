@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+typedef Interceptor<T> = T? Function(T? State);
+
 /// A delegate that is used by the [Router] to build the [Navigator].
 ///
 /// This is "the beamer", the one that does the actual beaming.
@@ -27,11 +29,13 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     this.transitionDelegate = const DefaultTransitionDelegate(),
     this.beamBackTransitionDelegate = const ReverseTransitionDelegate(),
     this.onPopPage,
-    this.interceptor,
+    Interceptor<T>? interceptor,
     this.setBrowserTabTitle = true,
     this.updateFromParent = true,
     this.updateParent = true,
   }) {
+    this.interceptor = interceptor ?? (s) => s;
+
     notFoundPage ??= BeamPage(
       title: 'Not found',
       child: Container(child: Center(child: Text('Not found'))),
@@ -44,11 +48,11 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
 
     _currentTransitionDelegate = transitionDelegate;
 
-    state = createState!(BeamState.fromUriString(initialPath));
+    state = createState!(this.interceptor(BeamState.fromUriString(initialPath) as T)!);
     _currentBeamLocation = EmptyBeamLocation();
   }
 
-  final T? Function(T? state)? interceptor;
+  late final Interceptor<T> interceptor;
 
   late T _state;
 
@@ -332,7 +336,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     bool rebuild = true,
     bool updateParent = true,
   }) {
-    if (interceptor != null) state = interceptor!(state);
+    state = interceptor(state);
 
     active = true;
     _popState = popState ?? _popState;
@@ -433,9 +437,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     final beamData = data ?? _currentBeamLocation.state.data;
     update(
       state: createState!(BeamState.fromUriString(uri, data: beamData)),
-      popState: popToNamed != null
-          ? createState!(BeamState.fromUriString(popToNamed, data: beamData))
-          : null,
+      popState: popToNamed != null ? createState!(BeamState.fromUriString(popToNamed, data: beamData)) : null,
       transitionDelegate: transitionDelegate,
       beamBackOnPop: beamBackOnPop,
       popBeamLocationOnPop: popBeamLocationOnPop,
@@ -531,8 +533,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
   }
 
   /// Remove everything except last from [beamLocationHistory].
-  void clearBeamLocationHistory() =>
-      beamLocationHistory.removeRange(0, beamLocationHistory.length - 1);
+  void clearBeamLocationHistory() => beamLocationHistory.removeRange(0, beamLocationHistory.length - 1);
 
   @override
   BeamState? get currentConfiguration => _parent == null ? _currentBeamLocation.state : null;
@@ -642,7 +643,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
         Uri(path: initialPath, queryParameters: beamState.queryParameters),
       );
     }
-    return setNewRoutePath(beamState);
+    return setNewRoutePath(interceptor(beamState as T)!);
   }
 
   @override
@@ -719,8 +720,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     }
 
     _currentBeamLocation.removeListener(_updateFromLocation);
-    if ((preferUpdate && location.runtimeType == _currentBeamLocation.runtimeType ||
-            replaceCurrent) &&
+    if ((preferUpdate && location.runtimeType == _currentBeamLocation.runtimeType || replaceCurrent) &&
         beamLocationHistory.isNotEmpty) {
       beamLocationHistory.removeLast();
     }
