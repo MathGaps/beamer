@@ -29,6 +29,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     this.transitionDelegate = const DefaultTransitionDelegate(),
     this.beamBackTransitionDelegate = const ReverseTransitionDelegate(),
     this.onPopPage,
+    this.interceptInitialPath = true,
     Interceptor<T>? interceptor,
     this.setBrowserTabTitle = true,
     this.updateFromParent = true,
@@ -52,6 +53,7 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     _currentBeamLocation = EmptyBeamLocation();
   }
 
+  final bool interceptInitialPath;
   late final Interceptor<T> interceptor;
 
   late T _state;
@@ -437,7 +439,9 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     final beamData = data ?? _currentBeamLocation.state.data;
     update(
       state: createState!(BeamState.fromUriString(uri, data: beamData)),
-      popState: popToNamed != null ? createState!(BeamState.fromUriString(popToNamed, data: beamData)) : null,
+      popState: popToNamed != null
+          ? createState!(BeamState.fromUriString(popToNamed, data: beamData))
+          : null,
       transitionDelegate: transitionDelegate,
       beamBackOnPop: beamBackOnPop,
       popBeamLocationOnPop: popBeamLocationOnPop,
@@ -533,7 +537,8 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
   }
 
   /// Remove everything except last from [beamLocationHistory].
-  void clearBeamLocationHistory() => beamLocationHistory.removeRange(0, beamLocationHistory.length - 1);
+  void clearBeamLocationHistory() =>
+      beamLocationHistory.removeRange(0, beamLocationHistory.length - 1);
 
   @override
   BeamState? get currentConfiguration => _parent == null ? _currentBeamLocation.state : null;
@@ -643,7 +648,9 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
         Uri(path: initialPath, queryParameters: beamState.queryParameters),
       );
     }
-    return setNewRoutePath(interceptor(beamState as T)!);
+    return setNewRoutePath(
+      interceptInitialPath ? interceptor(beamState as T)! : beamState,
+    );
   }
 
   @override
@@ -720,7 +727,8 @@ class BeamerDelegate<T extends BeamState> extends RouterDelegate<BeamState>
     }
 
     _currentBeamLocation.removeListener(_updateFromLocation);
-    if ((preferUpdate && location.runtimeType == _currentBeamLocation.runtimeType || replaceCurrent) &&
+    if ((preferUpdate && location.runtimeType == _currentBeamLocation.runtimeType ||
+            replaceCurrent) &&
         beamLocationHistory.isNotEmpty) {
       beamLocationHistory.removeLast();
     }
